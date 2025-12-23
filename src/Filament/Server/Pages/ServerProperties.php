@@ -4,6 +4,7 @@ namespace Pelican\MinecraftProperties\Filament\Server\Pages;
 
 use App\Models\Server;
 use App\Repositories\Daemon\DaemonFileRepository;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -61,6 +62,17 @@ final class ServerProperties extends ServerFormPage
     public $spawn_monsters;
     public $sync_chunk_writes;
     public $query_port;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Properties')
+                ->icon('tabler-device-floppy')
+                ->action(fn () => $this->save())
+                ->successNotificationTitle('Properties saved successfully'),
+        ];
+    }
 
     public function mount(): void
     {
