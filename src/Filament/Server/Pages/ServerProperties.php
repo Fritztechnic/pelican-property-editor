@@ -62,6 +62,7 @@ final class ServerProperties extends ServerFormPage
     public $spawn_monsters;
     public $sync_chunk_writes;
     public $query_port;
+    public $originalRaw;
 
     protected function getHeaderActions(): array
     {
@@ -69,7 +70,45 @@ final class ServerProperties extends ServerFormPage
             Action::make('save')
                 ->label('Save Properties')
                 ->icon('tabler-device-floppy')
-                ->action(fn () => $this->save())
+                ->action(function () {
+                    $data = $this->form->getState();
+
+                    // Update properties from form data
+                    $this->motd = $data['motd'] ?? $this->motd;
+                    $this->max_players = $data['max_players'] ?? $this->max_players;
+                    $this->online_mode = $data['online_mode'] ?? $this->online_mode;
+                    $this->pvp = $data['pvp'] ?? $this->pvp;
+                    $this->difficulty = $data['difficulty'] ?? $this->difficulty;
+                    $this->gamemode = $data['gamemode'] ?? $this->gamemode;
+                    $this->view_distance = $data['view_distance'] ?? $this->view_distance;
+                    $this->spawn_protection = $data['spawn_protection'] ?? $this->spawn_protection;
+                    $this->whitelist = $data['whitelist'] ?? $this->whitelist;
+                    $this->accepts_transfers = $data['accepts_transfers'] ?? $this->accepts_transfers;
+                    $this->allow_flight = $data['allow_flight'] ?? $this->allow_flight;
+                    $this->allow_nether = $data['allow_nether'] ?? $this->allow_nether;
+                    $this->broadcast_console_to_ops = $data['broadcast_console_to_ops'] ?? $this->broadcast_console_to_ops;
+                    $this->debug = $data['debug'] ?? $this->debug;
+                    $this->enable_command_block = $data['enable_command_block'] ?? $this->enable_command_block;
+                    $this->enable_query = $data['enable_query'] ?? $this->enable_query;
+                    $this->enable_rcon = $data['enable_rcon'] ?? $this->enable_rcon;
+                    $this->force_gamemode = $data['force_gamemode'] ?? $this->force_gamemode;
+                    $this->hardcore = $data['hardcore'] ?? $this->hardcore;
+                    $this->level_name = $data['level_name'] ?? $this->level_name;
+                    $this->level_seed = $data['level_seed'] ?? $this->level_seed;
+                    $this->level_type = $data['level_type'] ?? $this->level_type;
+                    $this->max_tick_time = $data['max_tick_time'] ?? $this->max_tick_time;
+                    $this->network_compression_threshold = $data['network_compression_threshold'] ?? $this->network_compression_threshold;
+                    $this->op_permission_level = $data['op_permission_level'] ?? $this->op_permission_level;
+                    $this->rcon_password = $data['rcon_password'] ?? $this->rcon_password;
+                    $this->server_port = $data['server_port'] ?? $this->server_port;
+                    $this->simulation_distance = $data['simulation_distance'] ?? $this->simulation_distance;
+                    $this->spawn_monsters = $data['spawn_monsters'] ?? $this->spawn_monsters;
+                    $this->sync_chunk_writes = $data['sync_chunk_writes'] ?? $this->sync_chunk_writes;
+                    $this->query_port = $data['query_port'] ?? $this->query_port;
+                    $this->raw = $data['raw'] ?? $this->raw;
+
+                    $this->performSave();
+                })
                 ->successNotificationTitle('Properties saved successfully'),
         ];
     }
@@ -79,6 +118,8 @@ final class ServerProperties extends ServerFormPage
         parent::mount();
 
         $this->loadProperties();
+
+        $this->originalRaw = $this->raw;
 
         $this->data = [
             'motd' => $this->motd,
@@ -260,7 +301,7 @@ final class ServerProperties extends ServerFormPage
         $this->raw = $content;
     }
 
-    public function save(): void
+    private function performSave(): void
     {
         /** @var Server|null $server */
         $server = Filament::getTenant();
@@ -271,7 +312,7 @@ final class ServerProperties extends ServerFormPage
 
         // If the user modified raw, prefer that; otherwise build from fields.
         $content = $this->raw;
-        if (Str::of($this->raw)->trim()->isEmpty()) {
+        if (Str::of($this->raw)->trim()->isEmpty() || $this->raw === $this->originalRaw) {
             $lines = [];
             $lines[] = "#Minecraft server properties";
             $lines[] = "#" . now()->toDateTimeString();
@@ -314,18 +355,10 @@ final class ServerProperties extends ServerFormPage
         try {
             $repo = app(DaemonFileRepository::class)->setServer($server);
 
-            // Backup existing file first (timestamped). Don't fail the save if backup fails.
-            try {
-                $existing = $repo->getContent('server.properties');
-                $backupName = 'server.properties.bak.' . now()->format('Ymd_His');
-                $repo->putContent($backupName, $existing);
-            } catch (\Throwable $e) {
-                report($e);
-            }
-
             $repo->putContent('server.properties', $content);
             $this->notify('success', 'server.properties saved.');
             $this->loadProperties();
+            $this->originalRaw = $this->raw;
         } catch (\Throwable $e) {
             report($e);
             $this->notify('danger', 'Failed to write server.properties.');
