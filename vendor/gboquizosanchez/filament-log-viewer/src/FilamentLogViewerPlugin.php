@@ -1,0 +1,236 @@
+<?php
+
+namespace Boquizo\FilamentLogViewer;
+
+use BackedEnum;
+use Boquizo\FilamentLogViewer\Entities\Log;
+use Boquizo\FilamentLogViewer\Entities\LogCollection;
+use Boquizo\FilamentLogViewer\Exceptions\TimezoneNotValidException;
+use Boquizo\FilamentLogViewer\Pages\ListLogs;
+use Boquizo\FilamentLogViewer\Pages\ViewLog;
+use Boquizo\FilamentLogViewer\UseCases\ClearLogUseCase;
+use Boquizo\FilamentLogViewer\UseCases\DeleteLogUseCase;
+use Boquizo\FilamentLogViewer\UseCases\DownloadLogUseCase;
+use Boquizo\FilamentLogViewer\UseCases\DownloadZipUseCase;
+use Boquizo\FilamentLogViewer\UseCases\ExtractLogByDateUseCase;
+use Boquizo\FilamentLogViewer\Utils\Stats;
+use Closure;
+use DateTimeZone;
+use Filament\Contracts\Plugin;
+use Filament\FilamentManager;
+use Filament\Panel;
+use Filament\Support\Concerns\EvaluatesClosures;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Config;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+class FilamentLogViewerPlugin implements Plugin
+{
+    use EvaluatesClosures;
+
+    protected bool|Closure $authorizeUsing = true;
+
+    protected string $viewLog = ViewLog::class;
+
+    protected string $listLogs = ListLogs::class;
+
+    protected string|Closure|null $navigationGroup = null;
+
+    protected int|Closure $navigationSort = 1;
+
+    protected string|Closure|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+
+    protected string|Closure|null $navigationLabel = null;
+
+    protected ?string $timezone = null;
+
+    public function getId(): string
+    {
+        return 'filament-log-viewer';
+    }
+
+    public static function make(): static
+    {
+        return app(static::class);
+    }
+
+    public static function get(): Plugin|FilamentManager|static
+    {
+        return filament(app(static::class)->getId());
+    }
+
+    public function register(Panel $panel): void
+    {
+        $panel
+            ->pages([
+                $this->listLogs,
+                $this->viewLog,
+            ]);
+    }
+
+    public function boot(Panel $panel): void
+    {
+        //
+    }
+
+    public function driver(): string
+    {
+        $driver = Config::string('filament-log-viewer.driver');
+
+        return match ($driver) {
+            'raw', 'single', 'daily' => $driver,
+            default => 'daily',
+        };
+    }
+
+    public function authorize(bool|Closure $callback = true): static
+    {
+        $this->authorizeUsing = $callback;
+
+        return $this;
+    }
+
+    public function isAuthorized(): bool
+    {
+        return $this->evaluate($this->authorizeUsing) === true;
+    }
+
+    public function listLogs(string $listLogs): static
+    {
+        $this->listLogs = $listLogs;
+
+        return $this;
+    }
+
+    public function getListLog(): string
+    {
+        return $this->evaluate($this->listLogs);
+    }
+
+    public function viewLog(string $viewLog): static
+    {
+        $this->viewLog = $viewLog;
+
+        return $this;
+    }
+
+    public function getViewLog(): string
+    {
+        return $this->evaluate($this->viewLog);
+    }
+
+    public function navigationGroup(string|Closure|null $navigationGroup): static
+    {
+        $this->navigationGroup = $navigationGroup;
+
+        return $this;
+    }
+
+    public function getNavigationGroup(): string
+    {
+        return $this->evaluate($this->navigationGroup) ?? __('filament-log-viewer::log.navigation.group');
+    }
+
+    public function navigationSort(int|Closure $navigationSort): static
+    {
+        $this->navigationSort = $navigationSort;
+
+        return $this;
+    }
+
+    public function getNavigationSort(): int
+    {
+        return $this->evaluate($this->navigationSort);
+    }
+
+    public function navigationIcon(string|Closure|BackedEnum $navigationIcon): static
+    {
+        $this->navigationIcon = $navigationIcon;
+
+        return $this;
+    }
+
+    public function getNavigationIcon(): string|BackedEnum|null
+    {
+        return $this->evaluate($this->navigationIcon);
+    }
+
+    public function navigationLabel(string|Closure|null $navigationLabel): static
+    {
+        $this->navigationLabel = $navigationLabel;
+
+        return $this;
+    }
+
+    public function getNavigationLabel(): string
+    {
+        return $this->evaluate($this->navigationLabel)
+            ?? __('filament-log-viewer::log.navigation.label');
+    }
+
+    public function getViewerStats(): Stats
+    {
+        return Stats::make((new LogCollection())->stats());
+    }
+
+    public function getLogsTableFiltered(string $date): array
+    {
+        return collect($this->getLogsTableRecords())
+            ->filter(fn(array $row): bool => $row['date'] === $date)
+            ->values()
+            ->first();
+    }
+
+    public function getLogsTableRecords(): array
+    {
+        $rows = $this
+            ->getViewerStats()
+            ->rows;
+
+        return array_values($rows) ?? [];
+    }
+
+    public function getLogViewerRecord(string $date): Log
+    {
+        return ExtractLogByDateUseCase::execute($date);
+    }
+
+    public function timezone(string $timezone): static
+    {
+        if (! in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
+            throw new TimezoneNotValidException($timezone);
+        }
+
+        $this->timezone = $timezone;
+
+        return $this;
+    }
+
+    public function getTimezone(): string
+    {
+        return $this->timezone ?? Config::get('app.timezone');
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function deleteLog(string $date): bool
+    {
+        return DeleteLogUseCase::execute($date);
+    }
+
+    public function downloadLog(string $date): BinaryFileResponse
+    {
+        return DownloadLogUseCase::execute($date);
+    }
+
+    public function downloadLogs(array $files): BinaryFileResponse
+    {
+        return DownloadZipUseCase::execute($files);
+    }
+
+    public function clearLog(string $file): bool
+    {
+        return ClearLogUseCase::execute($file);
+    }
+}

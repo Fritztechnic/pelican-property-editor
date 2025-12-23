@@ -1,0 +1,38 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-BSTB_l84.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/css/console.css": {
+    "file": "assets/console-sjBetjDK.css",
+    "src": "resources/css/console.css",
+    "isEntry": true,
+    "names": [
+      "console.css"
+    ]
+  },
+  "resources/css/monaco-editor.css": {
+    "file": "assets/monaco-editor-DhHVY4mn.css",
+    "src": "resources/css/monaco-editor.css",
+    "isEntry": true,
+    "names": [
+      "monaco-editor.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-CJLTIyis.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/console.js": {
+    "file": "assets/console-BO7YQ9gS.js",
+    "name": "console",
+    "src": "resources/js/console.js",
+    "isEntry": true
+  }
+}
