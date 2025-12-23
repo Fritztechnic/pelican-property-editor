@@ -24,4 +24,3 @@ Fritz
 
 <img width="2559" height="1389" alt="image" src="https://github.com/user-attachments/assets/5be9d2c7-4872-4829-9a65-1e13510108ce" />
 <img width="2559" height="1389" alt="image" src="https://github.com/user-attachments/assets/4adb5ad3-64a0-4085-b935-df3662d7627d" />
-
