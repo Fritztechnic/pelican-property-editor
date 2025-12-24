@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'pelican-dev/panel',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-feature/minecraft-properties',
+        'version' => 'dev-feature/minecraft-properties',
+        'reference' => '5e4a1160f6393b6da6c12a23fcbf8d6ca43478b7',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -1088,9 +1088,9 @@
             'dev_requirement' => false,
         ),
         'pelican-dev/panel' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-feature/minecraft-properties',
+            'version' => 'dev-feature/minecraft-properties',
+            'reference' => '5e4a1160f6393b6da6c12a23fcbf8d6ca43478b7',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

@@ -282,7 +282,10 @@ class PluginService
                 }
             }
 
-            $this->buildAssets();
+            // Allow plugins to opt-out of server-side asset builds by setting "skip_build": true in their plugin.json
+            if (! $this->pluginSkipsBuild($plugin)) {
+                $this->buildAssets();
+            }
 
             $this->runPluginMigrations($plugin);
 
@@ -321,7 +324,9 @@ class PluginService
                 $this->setStatus($plugin, PluginStatus::NotInstalled);
             }
 
-            $this->buildAssets();
+            if (! $this->pluginSkipsBuild($plugin)) {
+                $this->buildAssets();
+            }
 
             $this->manageComposerPackages(oldPackages: $pluginPackages);
         } catch (Exception $exception) {
